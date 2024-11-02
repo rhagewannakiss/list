@@ -8,16 +8,79 @@
 #include <memory.h>
 #include <math.h>
 
-static IsEmpty_t IsEmpty(ListStruct* list);
-static Status    ReallocUp(ListStruct* list);
-static Status    ReallocDown(ListStruct* list);
-static Status    ListPush(ListStruct* list, const elem_t elem);
-static Status    ListPop(ListStruct* list, const elem_t elem);
-
+static IsEmpty EmptyChecker(ListStruct* list);
+static Status  ReallocUp(ListStruct* list);
+static Status  ReallocDown(ListStruct* list);
+static Status  ReallocIfNeeded(ListStruct* list);
 
 //---------------------------------- PUBLIC ------------------------------------
+
+//=================================== CTOR =====================================
+Status ListCtor(ListStruct* list) {
+    assert(list != nullptr);
+
+    list->capacity = kMinNumOfElems;
+    list->data = (Node*)calloc(list->capacity, sizeof(Node));
+
+    list->FreeList = list->data->next;
+    // FIXME сформировать список свободных элементов
+    list->data[0].value = 0;
+    list->data[0].next =  0;
+    list->data[0].prev =  0;
+
+    for (size_t i = 1; i < list->capacity; i++) {
+        list->data[i].value = 0;
+        list->data[i].next =  i + 1;
+        list->data[i].prev =  0;
+    }
+
+    list->error = ListError_kOk;
+    list->verif = VERIFICATION_PASSED;
+
+    return SUCCESS;
+}
+
+//=================================== DTOR =====================================
+Status ListDtor(ListStruct* list) {
+    assert(list != nullptr);
+
+    free(list);
+    memset(list, 0, sizeof(list));
+
+    return SUCCESS;
+}
+
+//================================= LIST PUSH ===================================
+Status ListPush(ListStruct* list, const elem_t elem) {
+    assert(list != nullptr);
+
+    ReallocIfNeeded(list);
+
+    list->data[list->data[0].next].value = elem;
+    list->data[list->data[0].next].next++;
+    list->data[list->data[0].next].prev--;
+    list->data[0].next++;
+
+    return SUCCESS;
+}
+
+//================================== LIST POP ===================================
+Status ListPop(ListStruct* list, const elem_t elem) {
+    assert(list != nullptr);
+
+    if (EmptyChecker(list) == kEmpty) {
+        list->error = ListError_kEraseOnEmptyList;
+        return FAILURE;
+    }
+
+    list->data[0].next--;
+
+    ReallocIfNeeded(list);
+
+    return SUCCESS;
+}
 //=============================== VERIFICATION =================================
-VerificationStatus_t Verificator(ListStruct* list) { //еще будет дописываться
+VerificationStatus Verificator(ListStruct* list) { //еще будет дописываться
     assert(list != nullptr);
 
     return VERIFICATION_PASSED;
@@ -30,14 +93,15 @@ void_sex DotDump(ListStruct* list) {
 }
 
 //=============================== GET FRONT PTR ================================
-index_t GetFrontPtr(ListStruct* list) { // чо за хуйня вс это должно возвращать индекс если это и так первый элемент че
+index_t GetFrontPtr(ListStruct* list) {
+    //NOTE всм возвращать индекс первого элемента если это буквально первый элемент непон пойман
     assert(list != nullptr);
     index_t searched_index = 0;
 
-    if (IsEmpty(list) == kEmpty) {
+    if (EmptyChecker(list) == kEmpty) {
         list->error = ListError_kFrontIndexOnEmptyList;
         list->verif = VERIFICATION_FAILED;
-        return -666;
+        return -1;
     }
 
     list->verif = VERIFICATION_PASSED;
@@ -48,10 +112,12 @@ index_t GetFrontPtr(ListStruct* list) { // чо за хуйня вс это до
 index_t GetBackPtr(ListStruct* list) {
     assert(list != nullptr);
 
-    if (IsEmpty(list) == kEmpty) {
+    if (EmptyChecker(list) == kEmpty) {
         list->error = ListError_kBackIndexOnEmptyList;
-        return -666;
+        return -1;
     }
+
+
 }
 
 //================================ GET NEXT PTR ================================
@@ -60,15 +126,15 @@ index_t GetNextPtr(ListStruct* list, const elem_t elem) {
 
     index_t index_of_next_elem = 0;
 
-    if (IsEmpty(list) == kEmpty) {
+    if (EmptyChecker(list) == kEmpty) {
         list->error = ListError_kNextIndexOnEmptyList;
         return -666;
     }
 
-    if (IsEmpty(list) == kFull) {
-        if (ReallocUp(list) == FAILURE) {
+    if (EmptyChecker(list) == kFull) {
+        if (ReallocIfNeeded(list) == FAILURE) {
             list->error = ListError_kMemoryAllocationError;
-            return -666;
+            return -1;
         };
     }
 
@@ -82,9 +148,9 @@ index_t GetNextPtr(ListStruct* list, const elem_t elem) {
 index_t GetPrevPtr(ListStruct* list, const elem_t elem) {
     assert(list != nullptr);
 
-    if (IsEmpty(list) == kEmpty) {
+    if (EmptyChecker(list) == kEmpty) {
         list->error = ListError_kPrevIndexOnEmptyList;
-        return -666;
+        return -1;
     }
 }
 
@@ -126,13 +192,28 @@ Status InsertNext(ListStruct* list, const elem_t elem, /*const??*/ index_t ind_o
 // вставки элемента после заданного элемента
 Status InsertPrev(ListStruct* list, const elem_t elem, index_t ind_of_given_elem) {
     assert(list != nullptr);
+
+
 }
 
 //================================== ERASE =====================================
-// удаления заданного элемента
+// удаления заданного элемента + с конца с начала с заданного элемента и т.д.
 void_sex Erase(ListStruct* list, const elem_t elem) {
     assert(list != nullptr);
 
+    index_t current_ind = list->data[0].next;
+
+    while (current_ind != list->capacity) {
+        if (list->data[current_ind].value == elem) {
+            if (list->data[current_ind].prev != -1) {
+                list->data[list->data[current_ind].next].next = list->data[current_ind].next;
+            }
+        }
+         if (list->data[current_ind].next != -1) {
+                list->data[list->data[current_ind].next].prev = list->data[current_ind].prev;
+        }
+        current_ind = list->data[current_ind].next;
+    }
     list->error = ListError_kOk;
 }
 
@@ -141,73 +222,47 @@ void_sex Erase(ListStruct* list, const elem_t elem) {
 index_t Find(ListStruct* list, const elem_t elem) {
     assert(list != nullptr);
 
-    index_t searched_index = 0;
+    index_t current_index = list->data[0].next;
 
-    list->error = ListError_kOk;
-    return searched_index;
+    while (current_index > 0) {
+        if (list->data[current_index].value == elem) {
+            return current_index;
+        }
+        current_index = list->data[current_index].next;
+    }
+
+    return -1;
 }
 
 //================================ FIND INDEX ==================================
-// поиска элемента по его номеру в последовательности (операция индексации)
 elem_t FindIndex(ListStruct* list, index_t ind_of_given_elem) {
     assert(list != nullptr);
-}
 
-//=================================== CTOR =====================================
-Status ListCtor(ListStruct* list) {
-    if (list == nullptr) {
-        return FAILURE;
+    if (ind_of_given_elem >= list->capacity) {
+        list->error = ListError_kHeadOutOfList;
+        return -1;
     }
+    //NOTE нужно ли проверять size_t на отрицательность если это априори unsigned
 
-    list->capacity = kMinNumOfElems;
-    list->data = (node_t*)calloc(list->capacity, sizeof(node_t));
-
-    list->FreeList = list->data->next;
-
-    list->head =  0;
-    list->tail =  0;
-
-    list->error = ListError_kOk;
-    list->verif = VERIFICATION_PASSED;
-
-    return SUCCESS;
-}
-
-//=================================== DTOR =====================================
-Status ListDtor(ListStruct* list) {
-    if (list == nullptr) {
-        list->error = ListError_kMemoryAllocationError;
-        return FAILURE;
-    }
-
-    list->capacity = 0;
-
-    free(list->data);
-    list->data = nullptr;
-
-    list->error = ListError_kOk;
-    list->verif = VERIFICATION_PASSED;
-
-    return SUCCESS;
+    return list->data[ind_of_given_elem].value;
 }
 
 //---------------------------------- STATIC ------------------------------------
 
 //================================= IS EMPTY ===================================
-static IsEmpty_t IsEmpty(ListStruct* list) { //возможно и не нужно если работаем со списком содержащим фантомный элемент
+static IsEmpty EmptyChecker(ListStruct* list) {
+    //NOTE возможно и не нужно если работаем со списком содержащим фантомный элемент
     assert(list != nullptr);
 
-    if ((list->head - list->tail) == 1) {
+    if ((list->data[0].next - list->data[0].prev) == 1) {
         return kEmpty;
     }
-    else if ((list->tail - list->head) == 1) {
+    else if ((list->data[0].prev - list->data[0].next) == 1) {
         return kFull;
     }
     else {
         return kNotEmpty;
     }
-
-
 }
 
 //================================= REALLOC UP =================================
@@ -215,11 +270,11 @@ static Status ReallocUp(ListStruct* list) {
     assert(list != nullptr);
 
     list->capacity *= kMultiplier;
-    list->data = (node_t*)realloc(list->data, (size_t)(list->capacity * sizeof(node_t)));
+    list->data = (Node*)realloc(list->data, (size_t)(list->capacity * sizeof(Node)));
 
     if (list->data == nullptr) {
         list->error = ListError_kMemoryAllocationError;
-        //тут не нужно ли тогда free()-шить?
+        //NOTE тут не нужно ли тогда free()-шить?
         return FAILURE;
     }
 
@@ -230,40 +285,22 @@ static Status ReallocUp(ListStruct* list) {
 static Status ReallocDown(ListStruct* list) {
     assert(list != nullptr);
 
-    return SUCCESS;
-}
-//================================= LIST PUSH ===================================
-static Status ListPush(ListStruct* list, const elem_t elem) {
-    assert(list != nullptr);
+    list->capacity /= kMultiplier;
+    list->data = (Node*)realloc(list->data, (size_t)(list->capacity * sizeof(Node)));
 
-    if (list->head >= list->capacity) {
-        if (ReallocUp(list) == FAILURE) {
-            return FAILURE;
-        }
-    }
-
-    list->data[list->head].value = elem;
-    list->data[list->head].next = list->head + 1;
-    list->data[list->head].prev = list->head - 1;
-    list->head++;
-
-    // написать для circular
-
-    return SUCCESS;
-}
-
-//================================== LIST POP ===================================
-static Status ListPop(ListStruct* list, const elem_t elem) {
-    assert(list != nullptr);
-
-    if (IsEmpty(list) == kEmpty) {
-        list->error = ListError_kEraseOnEmptyList;
+    if (list->data == nullptr) {
+        list->error = ListError_kMemoryAllocationError;
         return FAILURE;
     }
 
-    list->head--;
+    return SUCCESS;
+}
 
-    if (list->head < list->capacity / kDivForReallocDown
+//============================= REALLOC IF NEEDED ===============================
+static Status ReallocIfNeeded(ListStruct* list) {
+    assert(list != nullptr);
+
+    if (list->data[0].next < list->capacity / kDivForReallocDown
      && list->capacity > kMinNumOfElems) {
         if (ReallocDown(list) == FAILURE) {
             list->error = ListError_kReallocationfailed;
@@ -271,5 +308,12 @@ static Status ListPop(ListStruct* list, const elem_t elem) {
         }
     }
 
+    if (list->data[0].next >= list->capacity) {
+        if (ReallocUp(list) == FAILURE) {
+            return FAILURE;
+        }
+    }
+
     return SUCCESS;
 }
+

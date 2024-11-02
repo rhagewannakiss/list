@@ -10,10 +10,10 @@ int main() {
     ListStruct List = {};
 
     ListCtor(&List);
-    DotDump(&List);
+
+
 
     ListDtor(&List);
-    DotDump(&List);
 
     return 0;
 }

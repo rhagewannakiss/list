@@ -7,40 +7,35 @@ static const int kMinNumOfElems =     8;
 static const int kMultiplier =        2;
 static const int kDivForReallocDown = 4;
 
-typedef void    void_sex;
-typedef int     elem_t;
-typedef int     index_t;
+typedef void   void_sex;
+typedef size_t elem_t;
+typedef size_t index_t;
 
-// typedef struct node_t {
-//     elem_t  value;
 
-//     node_t* next;
-//     node_t* prev;
-// } node_t;
-
-typedef struct node_t {
+typedef struct Node {
     elem_t  value;
 
     index_t next;
     index_t prev;
-} node_t;
+} Node;
 
 
-typedef enum VerificationStatus_t {
+
+typedef enum VerificationStatus  {
     VERIFICATION_PASSED = 0,
     VERIFICATION_FAILED = 1
-} VerificationStatus_t;
+} VerificationStatus ;
 
 typedef enum Status {
     SUCCESS = 0,
     FAILURE = 1
 } Status;
 
-typedef enum IsEmpty_t {
+typedef enum IsEmpty {
     kEmpty =    0x00,
     kNotEmpty = 0x01,
     kFull =     0xFF
-} IsEmpty_t;
+} IsEmpty;
 
 typedef enum ListError {
     ListError_kOk =                    0x00,
@@ -56,34 +51,32 @@ typedef enum ListError {
     ListError_kPrevIndexOnEmptyList =  0x09,
 } ListError;
 
-
 typedef struct ListStruct {
-    int                  capacity;
+    size_t             capacity;
 
-    node_t*              data;
+    Node*              data;
 
-    int                  head;
-    int                  tail;
+    index_t            FreeList;
+    ListError          error;
 
-    index_t              FreeList;
-
-    ListError            error;
-
-    VerificationStatus_t verif;
+    VerificationStatus verif;
 } ListStruct;
 
-
 //---------------------------------- PUBLIC ------------------------------------
-VerificationStatus_t Verificator(ListStruct* list);
+// NOTE главное 5 функций: ctor, dtor, вставка в начало, вставка в конец, вставка после какого то элеменнта, аналогичные функции для удаленя
+VerificationStatus   Verificator(ListStruct* list);
 void_sex             DotDump(ListStruct* list);
 
 Status               ListCtor(ListStruct* list);
-Status               ListDtor(ListStruct* list);
+Status               ListDtor(ListStruct* list); //k
 
 index_t              GetFrontPtr(ListStruct* list);
 index_t              GetBackPtr(ListStruct* list);
 index_t              GetNextPtr(ListStruct* list, const elem_t elem);
 index_t              GetPrevPtr(ListStruct* list, const elem_t elem);
+
+Status               ListPush(ListStruct* list, const elem_t elem);
+Status               ListPop(ListStruct* list, const elem_t elem);
 
 Status               InsertFront(ListStruct* list, const elem_t elem);
 Status               InsertBack(ListStruct* list, const elem_t elem);
