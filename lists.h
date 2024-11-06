@@ -49,6 +49,7 @@ typedef enum ListError {
     ListError_kBackIndexOnEmptyList =  0x07,
     ListError_kNextIndexOnEmptyList =  0x08,
     ListError_kPrevIndexOnEmptyList =  0x09,
+    ListError_kWrongIndex =            0x10
 } ListError;
 
 typedef struct ListStruct {
@@ -64,29 +65,26 @@ typedef struct ListStruct {
 
 //---------------------------------- PUBLIC ------------------------------------
 // NOTE главное 5 функций: ctor, dtor, вставка в начало, вставка в конец, вставка после какого то элеменнта, аналогичные функции для удаленя
-VerificationStatus   Verificator(ListStruct* list);
-void_sex             DotDump(ListStruct* list);
+VerificationStatus Verificator(ListStruct* list);
+void_sex           DotDump(ListStruct* list);
 
-Status               ListCtor(ListStruct* list);
-Status               ListDtor(ListStruct* list); //k
+Status             ListCtor(ListStruct* list); //с
+Status             ListDtor(ListStruct* list); //с
 
-index_t              GetFrontPtr(ListStruct* list);
-index_t              GetBackPtr(ListStruct* list);
-index_t              GetNextPtr(ListStruct* list, const elem_t elem);
-index_t              GetPrevPtr(ListStruct* list, const elem_t elem);
+Status             ListPush(ListStruct* list, const elem_t elem); //лол ладно я хз зачем сделала их это угарно
+Status             ListPop(ListStruct* list);
 
-Status               ListPush(ListStruct* list, const elem_t elem);
-Status               ListPop(ListStruct* list, const elem_t elem);
+Status             InsertFront(ListStruct* list, const elem_t elem);
+Status             InsertBack(ListStruct* list, const elem_t elem);
+Status             InsertNextInd(ListStruct* list, const elem_t elem, index_t ind_of_given_elem);
+Status             InsertNextVal(ListStruct* list, const elem_t inserted_elem, const elem_t value);
+Status             InsertPrevInd(ListStruct* list, const elem_t elem, index_t ind_of_given_elem);
+Status             InsertPrevVal(ListStruct* list, const elem_t inserted_elem, const elem_t value);
 
-Status               InsertFront(ListStruct* list, const elem_t elem);
-Status               InsertBack(ListStruct* list, const elem_t elem);
-Status               InsertNext(ListStruct* list, const elem_t elem, index_t ind_of_given_elem);
-Status               InsertPrev(ListStruct* list, const elem_t elem, index_t ind_of_given_elem);
+Status             Erase(ListStruct* list, const elem_t elem);
 
-void_sex             Erase(ListStruct* list, const elem_t elem);
-
-index_t              Find(ListStruct* list, const elem_t elem);
-elem_t               FindIndex(ListStruct* list, index_t ind_of_given_elem);
+index_t            FindVal(ListStruct* list, const elem_t elem);
+elem_t             FindIndex(ListStruct* list, index_t ind_of_given_elem);
 
 
 #endif //LISTS_H_
